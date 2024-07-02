@@ -7,7 +7,7 @@ const dockerHub = "https://registry-1.docker.io";
 
 const routes = {
   // production
-  "cloudflare-docker-proxy.343750470.workers.dev": dockerHub,
+  "d.hh2.workers.dev": dockerHub,
   // "quay.libcuda.so": "https://quay.io",
   // "gcr.libcuda.so": "https://gcr.io",
   // "k8s-gcr.libcuda.so": "https://k8s.gcr.io",
