@@ -11,7 +11,7 @@ MODE = "debug"
 TARGET_UPSTREAM = "https://registry-1.docker.io"
 
 [env.production]
-name = "cloudflare-docker-proxy"
+name = "d"
 # routes = [
 #   { pattern = "docker.libcuda.so", custom_domain = true },
 #   { pattern = "quay.libcuda.so", custom_domain = true },
