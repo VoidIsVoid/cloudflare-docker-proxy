@@ -12,7 +12,7 @@ const routes = {
   // "gcr.libcuda.so": "https://gcr.io",
   // "k8s-gcr.libcuda.so": "https://k8s.gcr.io",
   // "k8s.libcuda.so": "https://registry.k8s.io",
-  "d.hi2.us.kg": "https://ghcr.io",
+  "ghcr.hi2.us.kg": "https://ghcr.io",
   // "cloudsmith.libcuda.so": "https://docker.cloudsmith.io",
   // "ecr.libcuda.so": "https://public.ecr.aws",
 
