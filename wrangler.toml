@@ -14,8 +14,8 @@ TARGET_UPSTREAM = "https://registry-1.docker.io"
 [env.production]
 name = "d"
 routes = [
-  { pattern = "d.hh2.us.kg", zone_name = "hh2.us.kg" },
-  { pattern = "ghcr.hh2.us.kg",  zone_name = "hh2.us.kg" }
+  { pattern = "d.hi2.us.kg", custom_domain = true },
+  { pattern = "ghcr.hi2.us.kg", custom_domain = true }
 ]
 
 [env.production.vars]
