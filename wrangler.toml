@@ -1,5 +1,6 @@
 name = "cloudflare-docker-proxy"
 compatibility_date = "2023-12-01"
+workers_dev = false
 
 [dev]
 ip = "0.0.0.0"
@@ -11,16 +12,11 @@ MODE = "debug"
 TARGET_UPSTREAM = "https://registry-1.docker.io"
 
 [env.production]
-name = "ghcr"
-# routes = [
-#   { pattern = "docker.libcuda.so", custom_domain = true },
-#   { pattern = "quay.libcuda.so", custom_domain = true },
-#   { pattern = "gcr.libcuda.so", custom_domain = true },
-#   { pattern = "k8s-gcr.libcuda.so", custom_domain = true },
-#   { pattern = "k8s.libcuda.so", custom_domain = true },
-#   { pattern = "ghcr.libcuda.so", custom_domain = true },
-#   { pattern = "cloudsmith.libcuda.so", custom_domain = true },
-# ]
+name = "d"
+routes = [
+  { pattern = "d.hh2.us.kg", custom_domain = true },
+  { pattern = "ghcr.hh2.us.kg", custom_domain = true }
+]
 
 [env.production.vars]
 MODE = "production"
