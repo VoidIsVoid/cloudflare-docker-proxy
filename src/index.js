@@ -20,6 +20,36 @@ const routes = {
   // "docker-staging.libcuda.so": dockerHub,
 };
 
+const dockerRegistries = {
+  // production
+  "docker.io": dockerHub,
+  // "quay.libcuda.so": "https://quay.io",
+  // "gcr.libcuda.so": "https://gcr.io",
+  // "k8s-gcr.libcuda.so": "https://k8s.gcr.io",
+  // "k8s.libcuda.so": "https://registry.k8s.io",
+  "ghcr.io": "https://ghcr.io",
+  // "cloudsmith.libcuda.so": "https://docker.cloudsmith.io",
+  // "ecr.libcuda.so": "https://public.ecr.aws",
+
+  // staging
+  // "docker-staging.libcuda.so": dockerHub,
+};
+
+// const dockerRegistriesAuth = {
+//   // production
+//   "docker.io": 'https://',
+//   // "quay.libcuda.so": "https://quay.io",
+//   // "gcr.libcuda.so": "https://gcr.io",
+//   // "k8s-gcr.libcuda.so": "https://k8s.gcr.io",
+//   // "k8s.libcuda.so": "https://registry.k8s.io",
+//   "ghcr.io": "https://ghcr.io",
+//   // "cloudsmith.libcuda.so": "https://docker.cloudsmith.io",
+//   // "ecr.libcuda.so": "https://public.ecr.aws",
+
+//   // staging
+//   // "docker-staging.libcuda.so": dockerHub,
+// };
+
 function routeByHosts(host) {
   if (host in routes) {
     return routes[host];
@@ -32,7 +62,7 @@ function routeByHosts(host) {
 
 async function handleRequest(request) {
   const url = new URL(request.url);
-  const upstream = routeByHosts(url.hostname);
+  let upstream = routeByHosts(url.hostname);
   if (upstream === "") {
     return new Response(
       JSON.stringify({
@@ -79,7 +109,31 @@ async function handleRequest(request) {
   }
   // get token
   if (url.pathname == "/v2/auth") {
-    const newUrl = new URL(upstream + "/v2/");
+    let scope = url.searchParams.get("scope");
+    let registry = 'docker.io'
+    // autocomplete repo part into scope for DockerHub library images
+    // Example: repository:busybox:pull => repository:library/busybox:pull
+    if (scope) {
+      let scopeParts = scope.split(":");
+      if (scopeParts.length == 3) {
+        const imageFullname = scopeParts[1];
+        const imageFullnameParts = imageFullname.split('/')
+        if (imageFullnameParts[0] in dockerRegistries) {
+          // default registry
+          registry = imageFullnameParts[0]
+          imageFullnameParts.shift()
+        }
+        if (imageFullnameParts.length == 1) {
+          imageFullnameParts.unshift('library')
+        }
+        scopeParts[1] = imageFullnameParts.join('/');
+        scope = scopeParts.join(":");
+      }
+    }
+
+
+
+    const newUrl = new URL(dockerRegistries[registry] + "/v2/");
     const resp = await fetch(newUrl.toString(), {
       method: "GET",
       redirect: "follow",
@@ -92,34 +146,42 @@ async function handleRequest(request) {
       return resp;
     }
     const wwwAuthenticate = parseAuthenticate(authenticateStr);
-    let scope = url.searchParams.get("scope");
-    // autocomplete repo part into scope for DockerHub library images
-    // Example: repository:busybox:pull => repository:library/busybox:pull
-    if (scope && isDockerHub) {
-      let scopeParts = scope.split(":");
-      if (scopeParts.length == 3 && !scopeParts[1].includes("/")) {
-        scopeParts[1] = "library/" + scopeParts[1];
-        scope = scopeParts.join(":");
-      }
-    }
     return await fetchToken(wwwAuthenticate, scope, authorization);
   }
+  let requestTarget = url.pathname
   // redirect for DockerHub library images
   // Example: /v2/busybox/manifests/latest => /v2/library/busybox/manifests/latest
-  if (isDockerHub) {
-    const pathParts = url.pathname.split("/");
-    if (pathParts.length == 5) {
-      pathParts.splice(2, 0, "library");
-      const redirectUrl = new URL(url);
-      redirectUrl.pathname = pathParts.join("/");
-      return Response.redirect(redirectUrl, 301);
+  const pathParts = url.pathname.split("/");
+  if (url.pathname.startsWith('/v2/') && ['manifests', 'blobs'].includes(pathParts[pathParts.length - 2])) {
+    let registry = 'docker.io'
+    if (pathParts[2] in dockerRegistries) {
+      registry = pathParts[2]
+      pathParts.splice(2, 1)
     }
+    if (pathParts.length === 5) {
+      pathParts.splice(2, 0, 'library')
+    }
+    upstream = dockerRegistries[registry]
+    requestTarget = pathParts.join('/')
   }
+  // console.log('requestTarget: ' + requestTarget)
+  // if (isDockerHub) {
+
+  //   if (pathParts.length == 5) {
+  //     pathParts.splice(2, 0, "library");
+  //     const redirectUrl = new URL(url);
+  //     redirectUrl.pathname = pathParts.join("/");
+  //     return Response.redirect(redirectUrl, 301);
+  //   }
+  // }
   // foward requests
-  const newUrl = new URL(upstream + url.pathname);
+  // console.log('final url: ' + upstream + requestTarget)
+  const newHeaders = new Headers(request.headers)
+  newHeaders.delete('host')
+  const newUrl = new URL(upstream + requestTarget);
   const newReq = new Request(newUrl, {
     method: request.method,
-    headers: request.headers,
+    headers: newHeaders,
     redirect: "follow",
   });
   return await fetch(newReq);
