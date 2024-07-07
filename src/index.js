@@ -5,110 +5,32 @@ addEventListener("fetch", (event) => {
 
 const dockerHub = "https://registry-1.docker.io";
 
-const routes = {
-  // production
-  "d.hi2.us.kg": dockerHub,
-  // "quay.libcuda.so": "https://quay.io",
-  // "gcr.libcuda.so": "https://gcr.io",
-  // "k8s-gcr.libcuda.so": "https://k8s.gcr.io",
-  // "k8s.libcuda.so": "https://registry.k8s.io",
-  "ghcr.hi2.us.kg": "https://ghcr.io",
-  // "cloudsmith.libcuda.so": "https://docker.cloudsmith.io",
-  // "ecr.libcuda.so": "https://public.ecr.aws",
-
-  // staging
-  // "docker-staging.libcuda.so": dockerHub,
-};
-
 const dockerRegistries = {
-  // production
   "docker.io": dockerHub,
-  // "quay.libcuda.so": "https://quay.io",
-  // "gcr.libcuda.so": "https://gcr.io",
-  // "k8s-gcr.libcuda.so": "https://k8s.gcr.io",
-  // "k8s.libcuda.so": "https://registry.k8s.io",
   "ghcr.io": "https://ghcr.io",
-  // "cloudsmith.libcuda.so": "https://docker.cloudsmith.io",
-  // "ecr.libcuda.so": "https://public.ecr.aws",
-
-  // staging
-  // "docker-staging.libcuda.so": dockerHub,
+  "quay.io": "https://quay.io",
+  "gcr.io": "https://gcr.io",
+  "docker.cloudsmith.io": "https://docker.cloudsmith.io",
+  "public.ecr.aws": "https://public.ecr.aws",
 };
-
-// const dockerRegistriesAuth = {
-//   // production
-//   "docker.io": 'https://',
-//   // "quay.libcuda.so": "https://quay.io",
-//   // "gcr.libcuda.so": "https://gcr.io",
-//   // "k8s-gcr.libcuda.so": "https://k8s.gcr.io",
-//   // "k8s.libcuda.so": "https://registry.k8s.io",
-//   "ghcr.io": "https://ghcr.io",
-//   // "cloudsmith.libcuda.so": "https://docker.cloudsmith.io",
-//   // "ecr.libcuda.so": "https://public.ecr.aws",
-
-//   // staging
-//   // "docker-staging.libcuda.so": dockerHub,
-// };
-
-function routeByHosts(host) {
-  if (host in routes) {
-    return routes[host];
-  }
-  if (MODE == "debug") {
-    return TARGET_UPSTREAM;
-  }
-  return "";
-}
 
 async function handleRequest(request) {
   const url = new URL(request.url);
-  let upstream = routeByHosts(url.hostname);
-  if (upstream === "") {
-    return new Response(
-      JSON.stringify({
-        routes: routes,
-      }),
-      {
-        status: 404,
-      }
-    );
-  }
-  const isDockerHub = upstream == dockerHub;
+  let upstream = dockerHub
   const authorization = request.headers.get("Authorization");
   if (url.pathname == "/v2/") {
-    const newUrl = new URL(upstream + "/v2/");
     const headers = new Headers();
-    if (authorization) {
-      headers.set("Authorization", authorization);
-    }
-    // check if need to authenticate
-    const resp = await fetch(newUrl.toString(), {
-      method: "GET",
+    headers.set(
+      "Www-Authenticate",
+      `Bearer realm="${url.protocol}//${url.hostname}/token",service="cloudflare-docker-proxy"`
+    );
+    return new Response(JSON.stringify({ message: "UNAUTHORIZED" }), {
+      status: 401,
       headers: headers,
-      redirect: "follow",
     });
-    if (resp.status === 401) {
-      if (MODE == "debug") {
-        headers.set(
-          "Www-Authenticate",
-          `Bearer realm="http://${url.host}/v2/auth",service="cloudflare-docker-proxy"`
-        );
-      } else {
-        headers.set(
-          "Www-Authenticate",
-          `Bearer realm="${url.protocol}//${url.hostname}/v2/auth",service="cloudflare-docker-proxy"`
-        );
-      }
-      return new Response(JSON.stringify({ message: "UNAUTHORIZED" }), {
-        status: 401,
-        headers: headers,
-      });
-    } else {
-      return resp;
-    }
   }
   // get token
-  if (url.pathname == "/v2/auth") {
+  if (url.pathname === "/token") {
     let scope = url.searchParams.get("scope");
     let registry = 'docker.io'
     // autocomplete repo part into scope for DockerHub library images
@@ -131,8 +53,6 @@ async function handleRequest(request) {
       }
     }
 
-
-
     const newUrl = new URL(dockerRegistries[registry] + "/v2/");
     const resp = await fetch(newUrl.toString(), {
       method: "GET",
@@ -149,7 +69,8 @@ async function handleRequest(request) {
     return await fetchToken(wwwAuthenticate, scope, authorization);
   }
   let requestTarget = url.pathname
-  // redirect for DockerHub library images
+  // redirect for registry image and DockerHub library images
+  // Example: /v2/ghcr.io/busybox/manifests/latest => https://ghcr.io/v2/library/busybox/manifests/latest
   // Example: /v2/busybox/manifests/latest => /v2/library/busybox/manifests/latest
   const pathParts = url.pathname.split("/");
   if (url.pathname.startsWith('/v2/') && ['manifests', 'blobs'].includes(pathParts[pathParts.length - 2])) {
@@ -164,24 +85,10 @@ async function handleRequest(request) {
     upstream = dockerRegistries[registry]
     requestTarget = pathParts.join('/')
   }
-  // console.log('requestTarget: ' + requestTarget)
-  // if (isDockerHub) {
-
-  //   if (pathParts.length == 5) {
-  //     pathParts.splice(2, 0, "library");
-  //     const redirectUrl = new URL(url);
-  //     redirectUrl.pathname = pathParts.join("/");
-  //     return Response.redirect(redirectUrl, 301);
-  //   }
-  // }
-  // foward requests
-  // console.log('final url: ' + upstream + requestTarget)
-  const newHeaders = new Headers(request.headers)
-  newHeaders.delete('host')
   const newUrl = new URL(upstream + requestTarget);
   const newReq = new Request(newUrl, {
     method: request.method,
-    headers: newHeaders,
+    headers: request.headers,
     redirect: "follow",
   });
   return await fetch(newReq);

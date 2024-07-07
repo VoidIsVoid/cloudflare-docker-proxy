@@ -4,12 +4,11 @@
             "name": "Wrangler",
             "type": "node",
             "request": "attach",
-            "port": 8888,
-            "cwd": "${workspaceFolder}/src/",
+            "port": 9229,
+            "cwd": "/",
             "resolveSourceMapLocations": null,
             "attachExistingChildren": false,
-            "autoAttachChildProcesses": false,
-            "sourceMaps": true // works with or without this line
+            "autoAttachChildProcesses": false
         }
     ]
 }
