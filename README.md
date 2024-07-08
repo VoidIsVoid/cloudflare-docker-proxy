@@ -37,6 +37,10 @@ Worker will prepend docker.io/libray if they are missing.
 
 for example:
 ```log
-nginx:latest -> docker.io/library/busybox
-library/nginx:latest -> docker.io/library/busybox
+nginx:latest -> docker.io/library/busybox:latest
+library/nginx:latest -> docker.io/library/busybox:latest
 ```
+
+
+# Thanks
+This project is inspired by [repo](https://github.com/ciiiii/cloudflare-docker-proxy).
