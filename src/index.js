@@ -76,6 +76,10 @@ async function handleRequest(request) {
   const pathParts = url.pathname.split("/");
   if (url.pathname.startsWith('/v2/') && ['manifests', 'blobs'].includes(pathParts[pathParts.length - 2])) {
     let registry = 'docker.io'
+    const userAgent = request.headers.get('user-agent')
+    if (userAgent.includes('ollama')) {
+      registry = 'registry.ollama.ai'
+    }
     if (pathParts[2] in dockerRegistries) {
       registry = pathParts[2]
       pathParts.splice(2, 1)
