@@ -12,6 +12,7 @@ const dockerRegistries = {
   "gcr.io": "https://gcr.io",
   "docker.cloudsmith.io": "https://docker.cloudsmith.io",
   "public.ecr.aws": "https://public.ecr.aws",
+  "registry.ollama.ai": "https://registry.ollama.ai",
 };
 
 async function handleRequest(request) {
