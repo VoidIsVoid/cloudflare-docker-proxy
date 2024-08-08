@@ -82,12 +82,12 @@ async function handleRequest(request) {
     if (userAgent.includes('ollama')) {
       registry = 'registry.ollama.ai'
       requestMethod = 'GET'
-    }
-    if (pathParts[2] in dockerRegistries) {
+    } else if (pathParts[2] in dockerRegistries) {
       registry = pathParts[2]
       pathParts.splice(2, 1)
     }
-    if (pathParts.length === 5) {
+
+    if (registry !== 'nixery.dev' && pathParts.length === 5) {
       pathParts.splice(2, 0, 'library')
     }
     upstream = dockerRegistries[registry]
