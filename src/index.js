@@ -8,6 +8,7 @@ const dockerHub = "https://registry-1.docker.io";
 const dockerRegistries = {
   "docker.io": dockerHub,
   "ghcr.io": "https://ghcr.io",
+  "nixery.dev": "https://nixery.dev",
   "quay.io": "https://quay.io",
   "gcr.io": "https://gcr.io",
   "docker.cloudsmith.io": "https://docker.cloudsmith.io",
@@ -70,6 +71,7 @@ async function handleRequest(request) {
     return await fetchToken(wwwAuthenticate, scope, authorization);
   }
   let requestTarget = url.pathname
+  let requestMethod = request.method
   // redirect for registry image and DockerHub library images
   // Example: /v2/ghcr.io/busybox/manifests/latest => https://ghcr.io/v2/library/busybox/manifests/latest
   // Example: /v2/busybox/manifests/latest => /v2/library/busybox/manifests/latest
@@ -79,6 +81,7 @@ async function handleRequest(request) {
     const userAgent = request.headers.get('user-agent')
     if (userAgent.includes('ollama')) {
       registry = 'registry.ollama.ai'
+      requestMethod = 'GET'
     }
     if (pathParts[2] in dockerRegistries) {
       registry = pathParts[2]
@@ -92,9 +95,9 @@ async function handleRequest(request) {
   }
   const newUrl = new URL(upstream + requestTarget);
   const newReq = new Request(newUrl, {
-    method: request.method,
+    method: requestMethod,
     headers: request.headers,
-    redirect: "follow",
+    redirect: "manual",
   });
   return await fetch(newReq);
 }
