@@ -55,7 +55,7 @@ async function handleRequest(request) {
       }
     }
 
-    const newUrl = new URL(registry !== 'nixery.dev' ? dockerRegistries[registry] : dockerRegistries['docker.io'] + "/v2/");
+    const newUrl = new URL((registry !== 'nixery.dev' ? dockerRegistries[registry] : dockerRegistries['docker.io']) + "/v2/");
     const resp = await fetch(newUrl.toString(), {
       method: "GET",
       redirect: "follow",
