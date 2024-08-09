@@ -47,7 +47,7 @@ async function handleRequest(request) {
           registry = imageFullnameParts[0]
           imageFullnameParts.shift()
         }
-        if (imageFullnameParts.length == 1) {
+        if (registry !== 'nixery.dev' && imageFullnameParts.length == 1) {
           imageFullnameParts.unshift('library')
         }
         scopeParts[1] = imageFullnameParts.join('/');
@@ -55,7 +55,7 @@ async function handleRequest(request) {
       }
     }
 
-    const newUrl = new URL(dockerRegistries[registry] + "/v2/");
+    const newUrl = new URL(registry !== 'nixery.dev' ? dockerRegistries[registry] : dockerRegistries['docker.io'] + "/v2/");
     const resp = await fetch(newUrl.toString(), {
       method: "GET",
       redirect: "follow",
